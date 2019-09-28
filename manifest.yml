@@ -1,0 +1,8 @@
+---
+applications:
+- services:
+  - watsontts
+  name: watsontts
+  command: npm start
+  path: .
+  memory: 512M

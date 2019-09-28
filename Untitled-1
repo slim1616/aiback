@@ -1,0 +1,16 @@
+
+docker ps -a
+docker exec -ti pensive_babbage sh
+
+docker commit 1f
+
+
+
+
+
+
+docker build my-python-app
+docker run -ti chatbot-python
+docker run --name python-app my-python-app
+docker stop python-chat
+docker rm python-chat
