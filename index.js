@@ -3,6 +3,7 @@ const path = require('path')
 var Stream = require('stream').Transform;
 var express = require('express');
 var multer = require('multer');
+const vcapServices = require('vcap_services');
 require('dotenv').config()
 var fs = require('fs');
 const bodyParser = require('body-parser');
@@ -26,6 +27,16 @@ var uploading = multer({ storage: storage })
 
 
 
+const AuthorizationV1 = require('ibm-watson/authorization/v1');
+const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
+
+const sttCredentials = Object.assign(
+  {
+    iam_apikey: process.env.SPEECH_TO_TEXT_IAM_APIKEY, // if using an RC service
+    url: process.env.SPEECH_TO_TEXT_URL ? process.env.SPEECH_TO_TEXT_URL : SpeechToTextV1.URL
+  },
+  vcapServices.getCredentials('speech_to_text') // pulls credentials from environment in bluemix, otherwise returns {}
+);
 
 var TextToSpeechV1 = require('ibm-watson/text-to-speech/v1');
 let textToSpeech;
@@ -49,7 +60,7 @@ if (process.env.TEXT_TO_SPEECH_IAM_APIKEY && process.env.TEXT_TO_SPEECH_IAM_APIK
 
 
   
-  const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
+
   let speechToText;
   if (process.env.SPPECH_TO_TEXT_IAM_APIKEY && process.env.SPPECH_TO_TEXT_URL !== '') {
     speechToText = new SpeechToTextV1({
@@ -160,6 +171,25 @@ const languageTranslator = new LanguageTranslatorV3({
 
   // console.log(languageTranslator)
 
+
+  app.use('/api/speech-to-text/token', function(req, res) {
+    const sttAuthService = new AuthorizationV1(sttCredentials);
+    sttAuthService.getToken(function(err, response) {
+      if (err) {
+        console.log('Error retrieving token: ', err);
+        res.status(500).send('Error retrieving token');
+        return;
+      }
+      const token = response.token || response;
+      if (process.env.SPEECH_TO_TEXT_IAM_APIKEY) {
+        res.json({ accessToken: token, url: sttCredentials.url });
+      } else {
+        res.json({ token: token, url: sttCredentials.url });
+      }
+    });
+  });
+
+  
   app.post('/lt', function(req,res){
     let source = req.body.source;
     let from = req.body.from;

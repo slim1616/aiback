@@ -15,9 +15,9 @@ $ npm install vcap_services --save
 
 ## Usage
 
-```sh
+```javascript
 var vcapServices = require('vcap_services');
-var credentials = vcapServices.getCredentials('personality_insights');
+var credentials = vcapServices.findCredentials({ service: 'personality_insights' });
 console.log(credentials);
 ```
 
@@ -49,25 +49,33 @@ Output:
 ### Getting credentials for a specific plan
 
 Get credentials that match a specific service plan (only for `VCAP_SERVICES`).
-```sh
+```javascript
 var vcapServices = require('vcap_services');
-var credentials = vcapServices.getCredentials('personality_insights', 'standard');
+var credentials = vcapServices.findCredentials({ service: 'personality_insights', instance: { plan: 'standard' } });
 console.log(credentials);
 ```
 
 ### Getting credentials for a specific instance
 Get credentials that match a specific service instance (replace "YOUR NLC NAME" with the name of your service instance).
-```sh
+```javascript
 var vcapServices = require('vcap_services');
-var credentials = vcapServices.getCredentials('natural_language_classifier', null, 'YOUR NLC NAME');
+var credentials = vcapServices.findCredentials({ service: 'natural_language_classifier', { instance: { name: 'YOUR NLC NAME' } });
 console.log(credentials);
 ```
 
 ### Getting credentials for a specific plan and instance
 Get credentials that match a specific service plan and instance (replace "YOUR NLC NAME" with the name of your service instance).
-```sh
+```javascript
 var vcapServices = require('vcap_services');
-var credentials = vcapServices.getCredentials('natural_language_classifier', 'standard', 'YOUR NLC NAME');
+var credentials = vcapServices.findCredentials({ service: 'natural_language_classifier', instance: { plan: 'standard', name: 'YOUR NLC NAME' } });
+console.log(credentials);
+```
+
+### Getting credentials for a specific tag
+Get credentials that match a specific service tag, regardless of the service type.
+```javascript
+var vcapServices = require('vcap_services');
+var credentials = vcapServices.findCredentials({ instance: { tags: 'object-storage' } });
 console.log(credentials);
 ```
 
