@@ -32,8 +32,8 @@ const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
 
 const sttCredentials = Object.assign(
   {
-    iam_apikey: process.env.SPEECH_TO_TEXT_IAM_APIKEY, // if using an RC service
-    url: process.env.SPEECH_TO_TEXT_URL ? process.env.SPEECH_TO_TEXT_URL : SpeechToTextV1.URL
+    iam_apikey: process.env.SPPECH_TO_TEXT_IAM_APIKEY, // if using an RC service
+    url: process.env.SPPECH_TO_TEXT_URL ? process.env.SPPECH_TO_TEXT_URL : SpeechToTextV1.URL
   },
   vcapServices.getCredentials('speech_to_text') // pulls credentials from environment in bluemix, otherwise returns {}
 );
@@ -173,6 +173,7 @@ const languageTranslator = new LanguageTranslatorV3({
 
 
   app.use('/api/speech-to-text/token', function(req, res) {
+    console.log('ttttt')
     const sttAuthService = new AuthorizationV1(sttCredentials);
     sttAuthService.getToken(function(err, response) {
       if (err) {
