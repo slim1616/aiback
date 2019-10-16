@@ -26,63 +26,59 @@ var storage = multer.diskStorage({
 var uploading = multer({ storage: storage })
 
 
+const { IamAuthenticator } = require('ibm-watson/auth');
+  const PersonalityInsightsV3 = require('ibm-watson/personality-insights/v3');
 
-const AuthorizationV1 = require('ibm-watson/authorization/v1');
-const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
-
-const sttCredentials = Object.assign(
-  {
-    iam_apikey: process.env.SPPECH_TO_TEXT_IAM_APIKEY, // if using an RC service
-    url: process.env.SPPECH_TO_TEXT_URL ? process.env.SPPECH_TO_TEXT_URL : SpeechToTextV1.URL
-  },
-  vcapServices.getCredentials('speech_to_text') // pulls credentials from environment in bluemix, otherwise returns {}
-);
-
-var TextToSpeechV1 = require('ibm-watson/text-to-speech/v1');
-let textToSpeech;
-
-if (process.env.TEXT_TO_SPEECH_IAM_APIKEY && process.env.TEXT_TO_SPEECH_IAM_APIKEY !== '') {
-    textToSpeech = new TextToSpeechV1({
-    url: process.env.TEXT_TO_SPEECH_URL || 'https://stream.watsonplatform.net/text-to-speech/api',
-    iam_apikey: process.env.TEXT_TO_SPEECH_IAM_APIKEY || '<iam_apikey>',
-    iam_url: 'https://iam.bluemix.net/identity/token',
+  
+  const personalityInsights = new PersonalityInsightsV3({
+    authenticator: new IamAuthenticator({ apikey: process.env.P_INSIGHTS_IAM_APIKEY }),
+    version: '2016-10-19',
+    url: process.env.P_INSIGHTS_URL  || 'https://gateway.watsonplatform.net/personality-insights/api/'
   });
-} else {
-  textToSpeech = new TextToSpeechV1({
-    url: process.env.TEXT_TO_SPEECH_URL || 'https://stream.watsonplatform.net/text-to-speech/api',
-    username: process.env.TEXT_TO_SPEECH_USERNAME || '<username>',
-    password: process.env.TEXT_TO_SPEECH_PASSWORD || '<password>',
-  });
+  /*
+  personalityInsights.profile(
+    {
+      content: 'Enter more than 100 unique words here...',
+      contentType: 'text/plain',
+      consumptionPreferences: true
+    })
+    .then(response => {
+      console.log(JSON.stringify(response.result, null, 2));
+    })
+    .catch(err => {
+      console.log('error: ', err);
+    });
+*/
 
-}
 
+//const AuthorizationV1 = require('ibm-watson/authorization/v1');
+
+
+
+
+
+const TextToSpeechV1 = require('ibm-watson/text-to-speech/v1');
+ 
+const textToSpeech = new TextToSpeechV1({
+  authenticator: new IamAuthenticator({ apikey: process.env.TEXT_TO_SPEECH_IAM_APIKEY }),
+  url: process.env.TEXT_TO_SPEECH_URL || 'https://gateway-wdc.watsonplatform.net/text-to-speech/api',
+});
   //Begin speech to text
 
 
   
 
-  let speechToText;
-  if (process.env.SPPECH_TO_TEXT_IAM_APIKEY && process.env.SPPECH_TO_TEXT_URL !== '') {
-    speechToText = new SpeechToTextV1({
-    url: process.env.SPPECH_TO_TEXT_URL || 'https://stream.watsonplatform.net/speech-to-text/api/',
-    iam_apikey: process.env.SPPECH_TO_TEXT_IAM_APIKEY || '<iam_apikey>',
-    iam_url: 'https://iam.bluemix.net/identity/token',
-  });
-} else {
-  speechToText = new SpeechToTextV1({
-    url: process.env.SPPECH_TO_TEXT_URL || 'https://stream.watsonplatform.net/speech-to-text/api/',
-    username: process.env.TEXT_TO_SPEECH_USERNAME || '<username>',
-    password: process.env.TEXT_TO_SPEECH_PASSWORD || '<password>',
-  });
   
-  }
 
-  const params = {
-    // From file
-    model: 'en-US_BroadbandModel',
-    content_type : 'audio/mp3',
-    audio: fs.createReadStream('./public/waves/1570814035961.mp3')
-  };
+  const SpeechToTextV1 = require('ibm-watson/speech-to-text/v1');
+  
+  
+  const speechToText = new SpeechToTextV1({
+    authenticator: new IamAuthenticator({ apikey: process.env.SPPECH_TO_TEXT_IAM_APIKEY }),
+    url: process.env.SPPECH_TO_TEXT_URL || 'https://stream.watsonplatform.net/speech-to-text/api/'
+  });
+
+
    
   // speechToText.recognize(params,function (error, transcript) {
   //   if (error)
@@ -94,13 +90,21 @@ if (process.env.TEXT_TO_SPEECH_IAM_APIKEY && process.env.TEXT_TO_SPEECH_IAM_APIK
 
 
 
-const ToneAnalyzerV3 = require('ibm-watson/tone-analyzer/v3');
-const toneAnalyzer = new ToneAnalyzerV3({
-  version: '2017-09-21',
-  iam_apikey: process.env.TONE_ANALYZER_IAM_APIKEY || '<iam_apikey>',
-  url: 'https://gateway-lon.watsonplatform.net/tone-analyzer/api'
-});
+// const ToneAnalyzerV3 = require('ibm-watson/tone-analyzer/v3');
+// const toneAnalyzer = new ToneAnalyzerV3({
+//   version: '2017-09-21',
+//   iam_apikey: process.env.TONE_ANALYZER_IAM_APIKEY,
+//   url: 'https://gateway.watsonplatform.net/tone-analyzer/api/'
+// });
 
+const ToneAnalyzerV3 = require('ibm-watson/tone-analyzer/v3');
+
+ 
+const toneAnalyzer = new ToneAnalyzerV3({
+  authenticator: new IamAuthenticator({ apikey: process.env.TONE_ANALYZER_IAM_APIKEY }),
+  version: '2017-09-21',
+  url: 'https://gateway.watsonplatform.net/tone-analyzer/api/'
+});
 
 app.post('/toneanalyzer', function(req,res){
   let text = req.body.source
@@ -124,12 +128,12 @@ app.post('/toneanalyzer', function(req,res){
 
 
   var NaturalLanguageUnderstandingV1 = require('ibm-watson/natural-language-understanding/v1.js');
-  var nlu = new NaturalLanguageUnderstandingV1({
-    iam_apikey: process.env.NATURAL_LANGUAGE_IAM_APIKEY || '<iam_apikey>',
+  
+  const nlu = new NaturalLanguageUnderstandingV1({
+    authenticator: new IamAuthenticator({ apikey: process.env.NATURAL_LANGUAGE_IAM_APIKEY }),
     version: '2018-04-05',
-    url: process.env.NATURAL_LANGUAGE_URL || 'https://gateway.watsonplatform.net/natural-language-understanding/api/',
+    url: process.env.NATURAL_LANGUAGE_URL || 'https://gateway.watsonplatform.net/natural-language-understanding/api/'
   });
-
 
 app.post('/nlu', function(req,resp){
   let text = req.body.source
@@ -148,7 +152,7 @@ app.post('/nlu', function(req,resp){
   };
   nlu.analyze(options, function(err, res) {
     if (err) {
-      resp.send(err)
+        resp.send(err)
       return;
     }
     resp.setHeader('Content-Type', 'application/json');
@@ -160,35 +164,19 @@ app.post('/nlu', function(req,resp){
 
 
 
+
+  
 const LanguageTranslatorV3 = require('ibm-watson/language-translator/v3');
+
 const languageTranslator = new LanguageTranslatorV3({
-  url: process.env.LT_URL || 'https://stream.watsonplatform.net/text-to-speech/api',
-  iam_apikey: process.env.LT_IAM_APIKEY || '<iam_apikey>',
-  iam_url: 'https://iam.bluemix.net/identity/token',
+  authenticator: new IamAuthenticator({ apikey: process.env.LT_IAM_APIKEY }),
+  url: process.env.LT_URL || 'https://gateway.watsonplatform.net/language-translator/api/',
   version: '2019-01-10'
 });
-  
-
   // console.log(languageTranslator)
 
 
-  app.use('/api/speech-to-text/token', function(req, res) {
-    console.log('ttttt')
-    const sttAuthService = new AuthorizationV1(sttCredentials);
-    sttAuthService.getToken(function(err, response) {
-      if (err) {
-        console.log('Error retrieving token: ', err);
-        res.status(500).send('Error retrieving token');
-        return;
-      }
-      const token = response.token || response;
-      if (process.env.SPEECH_TO_TEXT_IAM_APIKEY) {
-        res.json({ accessToken: token, url: sttCredentials.url });
-      } else {
-        res.json({ token: token, url: sttCredentials.url });
-      }
-    });
-  });
+  
 
   
   app.post('/lt', function(req,res){
@@ -217,26 +205,15 @@ const languageTranslator = new LanguageTranslatorV3({
   
   })
 
-  var VisualRecognitionV3 = require('ibm-watson/visual-recognition/v3');
 
-  let visualRecognition;
-
-  if (process.env.VISUAL_RECOGNITION_IAM_APIKEY && process.env.VISUAL_RECOGNITION_IAM_APIKEY !== '') {
-      visualRecognition = new VisualRecognitionV3({
-      url: process.env.VISUAL_RECOGNITION_URL || 'https://stream.watsonplatform.net/text-to-speech/api',
-      version: '2018-03-19',
-      iam_apikey: process.env.VISUAL_RECOGNITION_IAM_APIKEY || '<iam_apikey>',
-      iam_url: 'https://iam.bluemix.net/identity/token',
-    });
-  } else {
-    visualRecognition = new VisualRecognitionV3({
-      url: process.env.VISUAL_RECOGNITION_URL || 'https://stream.watsonplatform.net/text-to-speech/api',
-      username: process.env.VISUAL_RECOGNITION_USERNAME || '<username>',
-      password: process.env.VISUAL_RECOGNITION_PASSWORD || '<password>',
-    });
-  
-  }
-
+ 
+  const VisualRecognitionV3 = require('ibm-watson/visual-recognition/v3');
+ 
+  const visualRecognition = new VisualRecognitionV3({
+    url: process.env.VISUAL_RECOGNITION_URL,
+    version: '2018-03-19',
+    authenticator: new IamAuthenticator({ apikey: process.env.VISUAL_RECOGNITION_IAM_APIKEY })
+  });
  
 
  
@@ -279,14 +256,15 @@ app.post('/upload', uploading.single('image'),function(req, res) {
   var params = {
     images_file: fs.createReadStream(req.file.path)
   };
+  console.log('params ' + params)
     visualRecognition.classify(params)
     .then(result => {
-      res.setHeader('Content-Type', 'application/json');
+      //res.setHeader('Content-Type', 'application/json');
       res.send(JSON.stringify(result, null, 2));
       
     })
     .catch(err => {
-      console.log(err);
+      console.log('err');
     });
 })
 
@@ -315,22 +293,45 @@ app.post('/upload', uploading.single('image'),function(req, res) {
     
   app.post('/synthesize', function(req, res) {
     console.log(req.body.name)
+    // const synthesizeParams = {
+    //   text: req.body.text,
+    //   accept: 'audio/mp3',
+    //   voice: req.body.name,
+    // };
+    
     const synthesizeParams = {
-      text: req.body.text,
-      accept: 'audio/mp3',
-      voice: req.body.name,
+      text: 'Hello world',
+      accept: 'audio/wav',
+      voice: 'en-US_AllisonVoice',
     };
     
-    textToSpeech.synthesize(synthesizeParams)
-      .then(audio => {
-        const filename = new Date().getTime()+'.mp3';
-        audio.pipe(fs.createWriteStream('./public/waves/'+filename));
-        res.setHeader('Content-Type', 'Application/json');
-        res.send(JSON.stringify ({ 'filename' : filename}));
-      })
-      .catch(err => {
-        console.log('error:', err);
-      });
+    textToSpeech.synthesize(synthesizeParams, function(err, audio) {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      textToSpeech.repairWavHeader(audio);
+      fs.writeFileSync('audio.wav', audio);
+      console.log('audio.wav written with a corrected wav header');
+    })
+  // .then(audio => {
+  //   audio.pipe(fs.createWriteStream('hello_world.wav'));
+  // })
+  // .catch(err => {
+  //   console.log('error:', err);
+  // });
+      // .then(response => {
+      //   console.log(response)
+      //   const audio = response.result;
+      //   return textToSpeech.repairWavHeaderStream(audio);
+      // })
+      // .then(repairedFile => {
+      //   fs.writeFileSync('audio.wav', audio);
+      //   console.log('audio.wav written with a corrected wav header');
+      // })
+      // .catch(err => {
+      //   console.log(err);
+      // });
     
   });
 
